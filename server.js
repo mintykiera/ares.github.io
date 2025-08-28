@@ -42,6 +42,10 @@ function detectTaskType(message) {
   return "general";
 }
 
+app.get("/", (req, res) => {
+  res.status(200).send("Hello from the Ares Backend!");
+});
+
 // A single, unified endpoint for your client to call
 app.post("/v1/chat/completions", async (req, res) => {
   try {

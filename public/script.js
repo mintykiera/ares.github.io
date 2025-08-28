@@ -40,7 +40,7 @@ document.addEventListener("DOMContentLoaded", function () {
     document.body.appendChild(confirmModal);
   }
 
-  const API_URL = "https://ares-backend.onrender.com/v1/chat/completions";
+  const API_URL = "/v1/chat/completions";
 
   let currentChatId = null;
   let chats = JSON.parse(localStorage.getItem("Ares-chats")) || {};
