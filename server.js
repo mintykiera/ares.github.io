@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const express = require('express');
 const fetch = require('node-fetch');
 const cors = require('cors');
@@ -6,15 +8,16 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// The URL for your actual AI backend API
-const AI_API_URL = 'https://a6247a59aee0.ngrok-free.app';
+// The URL for your actual AI backend API is now loaded securely
+// from the .env file. It is no longer exposed in the code.
+const AI_API_URL = process.env.AI_API_URL;
 
-// Model mapping - This is now securely kept on the server
+// The model mapping is also loaded securely from the .env file.
 const MODEL_MAPPING = {
-  code: "deepseek-coder-v2-lite-instruct",
-  math: "meta-llama-meta-llama-3.1-8b-instruct",
-  creative: "deepseek/deepseek-r1-0528-qwen3-8b",
-  general: "meta-llama-Meta-Llama-3.1-8B-Instruct"
+  code: process.env.MODEL_CODE,
+  math: process.env.MODEL_MATH,
+  creative: process.env.MODEL_CREATIVE,
+  general: process.env.MODEL_GENERAL
 };
 
 app.use(cors());
@@ -52,6 +55,12 @@ app.post('/v1/chat/completions', async (req, res) => {
     const modelName = MODEL_MAPPING[taskType] || MODEL_MAPPING.general;
     console.log(`Task: ${taskType}, Routing to model: ${modelName}`);
 
+    // Check if the AI_API_URL or modelName are missing
+    if (!AI_API_URL || !modelName) {
+      console.error("Configuration error: AI_API_URL or model name is missing. Check your .env file.");
+      return res.status(500).json({ error: "Server configuration error." });
+    }
+    
     // 3. (Optional but recommended) Handle the model loading on the server
     // This call ensures the correct model is ready before the completion request.
     await fetch(`${AI_API_URL}/v1/models/load`, {
