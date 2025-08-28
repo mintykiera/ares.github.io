@@ -41,9 +41,10 @@ document.addEventListener("DOMContentLoaded", function () {
     `;
     document.body.appendChild(confirmModal);
   }
-  // API Configuration - using Netlify functions
-  const API_URL = "/.netlify/functions/api-proxy";
-  const LOAD_MODEL_URL = "/.netlify/functions/api-proxy/load-model";
+
+  const BASE_URL = "https://612d7b2c5190.ngrok-free.app/";
+  const API_URL = `${BASE_URL}/v1/chat/completions`;
+  const LOAD_MODEL_URL = `${BASE_URL}/v1/models/load`;
 
   // State Management
   let currentChatId = null;
