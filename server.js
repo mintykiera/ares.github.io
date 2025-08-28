@@ -8,7 +8,6 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// The URL for your actual AI backend API is now loaded securely
 // from the .env file. It is no longer exposed in the code.
 const AI_API_URL = process.env.AI_API_URL;
 
