@@ -8,10 +8,8 @@ const path = require("path");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// from the .env file. It is no longer exposed in the code.
 const AI_API_URL = process.env.AI_API_URL;
 
-// The model mapping is also loaded securely from the .env file.
 const MODEL_MAPPING = {
   code: process.env.MODEL_CODE,
   math: process.env.MODEL_MATH,
@@ -22,7 +20,61 @@ const MODEL_MAPPING = {
 app.use(cors());
 app.use(express.json());
 
-// This function is moved from your client-side code to the server
+// Any request that matches a file in here (like index.html) will be served immediately.
+app.use(express.static(path.join(__dirname, "public")));
+
+// HEALTH CHECK ROUTE (Now correctly placed after the static files)
+app.get("/api/health", (req, res) => {
+  // (Optional: I moved this to /api/health so it doesn't conflict with the main page)
+  res.status(200).send("Hello from the Ares Backend!");
+});
+
+// API endpoint. This will only be reached if the request is not for a static file.
+app.post("/v1/chat/completions", async (req, res) => {
+  try {
+    const { messages, temperature, max_tokens } = req.body;
+    const lastUserMessage = messages.filter((m) => m.role === "user").pop();
+    if (!lastUserMessage) {
+      return res.status(400).json({ error: "No user message found" });
+    }
+
+    const taskType = detectTaskType(lastUserMessage.content);
+    const modelName = MODEL_MAPPING[taskType] || MODEL_MAPPING.general;
+    console.log(`Task: ${taskType}, Routing to model: ${modelName}`);
+
+    if (!AI_API_URL || !modelName) {
+      console.error(
+        "Configuration error: AI_API_URL or model name is missing. Check your .env file."
+      );
+      return res.status(500).json({ error: "Server configuration error." });
+    }
+
+    await fetch(`${AI_API_URL}/v1/models/load`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model: modelName }),
+    });
+
+    const response = await fetch(`${AI_API_URL}/v1/chat/completions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: modelName,
+        messages,
+        temperature,
+        max_tokens,
+        stream: false,
+      }),
+    });
+
+    const data = await response.json();
+    res.status(response.status).json(data);
+  } catch (error) {
+    console.error("Error in chat completion proxy:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
 function detectTaskType(message) {
   const msg = message.toLowerCase();
   if (
@@ -41,67 +93,6 @@ function detectTaskType(message) {
   }
   return "general";
 }
-
-app.get("/", (req, res) => {
-  res.status(200).send("Hello from the Ares Backend!");
-});
-
-// A single, unified endpoint for your client to call
-app.post("/v1/chat/completions", async (req, res) => {
-  try {
-    // The client sends the request without any model information
-    const { messages, temperature, max_tokens } = req.body;
-
-    // 1. Identify the last user message to determine the task type
-    const lastUserMessage = messages.filter((m) => m.role === "user").pop();
-    if (!lastUserMessage) {
-      return res.status(400).json({ error: "No user message found" });
-    }
-
-    // 2. Detect the task and select the appropriate model
-    const taskType = detectTaskType(lastUserMessage.content);
-    const modelName = MODEL_MAPPING[taskType] || MODEL_MAPPING.general;
-    console.log(`Task: ${taskType}, Routing to model: ${modelName}`);
-
-    // Check if the AI_API_URL or modelName are missing
-    if (!AI_API_URL || !modelName) {
-      console.error(
-        "Configuration error: AI_API_URL or model name is missing. Check your .env file."
-      );
-      return res.status(500).json({ error: "Server configuration error." });
-    }
-
-    // 3. (Optional but recommended) Handle the model loading on the server
-    // This call ensures the correct model is ready before the completion request.
-    await fetch(`${AI_API_URL}/v1/models/load`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ model: modelName }),
-    });
-
-    // 4. Proxy the request to the actual AI service with the chosen model
-    const response = await fetch(`${AI_API_URL}/v1/chat/completions`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: modelName, // The server adds the correct model here
-        messages,
-        temperature,
-        max_tokens,
-        stream: false,
-      }),
-    });
-
-    const data = await response.json();
-    res.status(response.status).json(data);
-  } catch (error) {
-    console.error("Error in chat completion proxy:", error);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
-});
-
-// Serve your static frontend files (index.html, script.js, etc.)
-app.use(express.static(path.join(__dirname, "public")));
 
 app.listen(PORT, () => {
   console.log(`Proxy server running on port ${PORT}`);
