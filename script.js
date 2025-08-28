@@ -42,7 +42,7 @@ document.addEventListener("DOMContentLoaded", function () {
     document.body.appendChild(confirmModal);
   }
 
-  const BASE_URL = "https://4ffe89eee776.ngrok-free.app";
+  const BASE_URL = "https://77d1933a19a4.ngrok-free.app";
   const API_URL = `${BASE_URL}/v1/chat/completions`;
   const LOAD_MODEL_URL = `${BASE_URL}/v1/models/load`;
 
