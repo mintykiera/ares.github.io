@@ -6,9 +6,9 @@ const cors = require('cors');
 const path = require('path');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+// const PORT = process.env.PORT || 3000;
 
-// from the .env file. It is no longer exposed in the code.
+// // from the .env file. It is no longer exposed in the code.
 const AI_API_URL = process.env.AI_API_URL;
 
 // The model mapping is also loaded securely from the .env file.
